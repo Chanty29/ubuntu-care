@@ -21,7 +21,7 @@ $role = $_SESSION["role"];
   <?php if ($role === "beneficiary") { ?>
     <p>Beneficiary area (request form coming next).</p>
   <?php } elseif ($role === "ngo_admin") { ?>
-    <p>NGO admin area (profile and dashboard coming next).</p>
+ <p><a href="ngo_profile.php">Create / edit your organisation profile</a></p>
   <?php } elseif ($role === "donor") { ?>
     <p>Donor area (pledges coming next).</p>
   <?php } elseif ($role === "volunteer") { ?>

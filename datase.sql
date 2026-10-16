@@ -22,6 +22,8 @@ CREATE TABLE ngo_profiles (
   category VARCHAR(50),
   latitude DECIMAL(9,6),
   longitude DECIMAL(9,6),
+  area VARCHAR(100),
+  category VARCHAR(50),
   FOREIGN KEY (userID) REFERENCES users(userID)
 );
 
