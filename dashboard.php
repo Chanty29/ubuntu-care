@@ -19,7 +19,7 @@ $role = $_SESSION["role"];
   <p>You are logged in as: <strong><?php echo htmlspecialchars(str_replace('_', ' ', $role)); ?></strong></p>
 
   <?php if ($role === "beneficiary") { ?>
-    <p>Beneficiary area (request form coming next).</p>
+  <p><a href="request.php">Request support</a></p>
   <?php } elseif ($role === "ngo_admin") { ?>
  <p><a href="ngo_profile.php">Create / edit your organisation profile</a></p>
   <?php } elseif ($role === "donor") { ?>

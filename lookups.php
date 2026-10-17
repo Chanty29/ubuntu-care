@@ -24,3 +24,13 @@ $AREAS = [
     "Mamelodi"         => [-25.7140, 28.3590],
     "Soshanguve"       => [-25.5120, 28.0970],
 ];
+
+$KEYWORDS = [
+    "food"        => ["food", "hungry", "hunger", "meal", "eat", "groceries", "starving", "nutrition"],
+    "shelter"     => ["shelter", "homeless", "house", "housing", "rent", "evicted", "eviction", "sleep", "roof"],
+    "medical"     => ["sick", "doctor", "clinic", "medicine", "medical", "hospital", "pain", "health", "chronic"],
+    "legal"       => ["legal", "lawyer", "court", "police", "rights", "abuse", "contract", "dispute"],
+    "education"   => ["school", "study", "education", "learn", "bursary", "skills", "training", "uniform", "books"],
+    "clothing"    => ["clothes", "clothing", "shoes", "blanket", "jacket", "uniform"],
+    "counselling" => ["counselling", "counseling", "depressed", "stress", "trauma", "grief", "lonely", "support"],
+];

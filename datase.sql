@@ -35,6 +35,9 @@ CREATE TABLE beneficiary_requests (
   status VARCHAR(30) DEFAULT 'open',
   date_created DATETIME DEFAULT CURRENT_TIMESTAMP,
   FOREIGN KEY (userID) REFERENCES users(userID)
+  area VARCHAR(100),
+  category VARCHAR(50),
+
 );
 
 CREATE TABLE match_history (
