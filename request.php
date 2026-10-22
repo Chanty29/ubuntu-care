@@ -1,6 +1,7 @@
 <?php
 session_start();
 require 'db.php';
+require 'lookups.php';
 require 'matcher.php';
 
 if (!isset($_SESSION["user_id"]) || $_SESSION["role"] !== "beneficiary") {
@@ -43,27 +44,23 @@ if ($_SERVER["REQUEST_METHOD"] === "POST") {
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>Request Support - Ubuntu Care</title>
-  <style>
-    body { font-family: Arial, sans-serif; max-width: 520px; margin: 40px auto; padding: 0 16px; }
-    textarea, select, button { width: 100%; padding: 10px; margin: 6px 0 14px; box-sizing: border-box; }
-    button { background: #0057b8; color: white; border: none; cursor: pointer; }
-    .msg { color: #b00020; }
-    .card { border: 1px solid #ccc; border-radius: 6px; padding: 12px; margin: 10px 0; }
-    .score { float: right; font-weight: bold; color: #1b7f3b; }
-  </style>
+  <link rel="stylesheet" href="style.css">
 </head>
 <body>
-  <h2>What do you need help with?</h2>
-  <?php if ($message) echo "<p class='msg'>" . htmlspecialchars($message) . "</p>"; ?>
-  <form method="post">
-    <label>Describe your need in your own words</label>
-    <textarea name="description" rows="4" required></textarea>
-    <label>Your area</label>
-    <select name="area">
-      <?php foreach ($AREAS as $name => $coords) echo "<option value='$name'>$name</option>"; ?>
-    </select>
-    <button type="submit">Find help</button>
-  </form>
+<?php $narrow = true; include 'navbar.php'; ?>
+  <div class="panel">
+    <h2>What do you need help with?</h2>
+    <?php if ($message) echo "<p class='msg'>" . htmlspecialchars($message) . "</p>"; ?>
+    <form method="post">
+      <label>Describe your need in your own words</label>
+      <textarea name="description" rows="4" required></textarea>
+      <label>Your area</label>
+      <select name="area">
+        <?php foreach ($AREAS as $name => $coords) echo "<option value='" . htmlspecialchars($name) . "'>" . htmlspecialchars($name) . "</option>"; ?>
+      </select>
+      <button type="submit">Find help</button>
+    </form>
+  </div>
 
   <?php if ($matches !== null) { ?>
     <h3>Best matches for you</h3>
@@ -81,5 +78,6 @@ if ($_SERVER["REQUEST_METHOD"] === "POST") {
   <?php } ?>
 
   <p><a href="dashboard.php">Back to dashboard</a></p>
+<?php include 'footer.php'; ?>
 </body>
 </html>

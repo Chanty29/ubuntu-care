@@ -1,4 +1,5 @@
 <?php
+session_start();
 require 'db.php';
 $message = "";
 
@@ -40,33 +41,32 @@ $roles = $conn->query("SELECT roleID, role_name FROM roles");
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>Register - Ubuntu Care</title>
-  <style>
-    body { font-family: Arial, sans-serif; max-width: 420px; margin: 40px auto; padding: 0 16px; }
-    input, select, button { width: 100%; padding: 10px; margin: 6px 0 14px; box-sizing: border-box; }
-    button { background: #0057b8; color: white; border: none; cursor: pointer; }
-    .msg { color: #b00020; }
-  </style>
+  <link rel="stylesheet" href="style.css">
 </head>
 <body>
-  <h2>Join Ubuntu Care</h2>
-  <?php if ($message) echo "<p class='msg'>$message</p>"; ?>
-  <form method="post">
-    <label>Full name</label>
-    <input type="text" name="name" required>
-    <label>Email</label>
-    <input type="email" name="email" required>
-    <label>Password</label>
-    <input type="password" name="password" required>
-    <label>Your area (e.g. Soweto)</label>
-    <input type="text" name="location">
-    <label>I am a...</label>
-    <select name="roleID">
-      <?php while ($r = $roles->fetch_assoc()) {
-        echo "<option value='{$r['roleID']}'>" . ucfirst(str_replace('_', ' ', $r['role_name'])) . "</option>";
-      } ?>
-    </select>
-    <button type="submit">Register</button>
-  </form>
-  <p>Already have an account? <a href="login.php">Log in</a></p>
+<?php $narrow = true; include 'navbar.php'; ?>
+  <div class="panel">
+    <h2>Join Ubuntu Care</h2>
+    <?php if ($message) echo "<p class='msg'>" . htmlspecialchars($message) . "</p>"; ?>
+    <form method="post">
+      <label>Full name</label>
+      <input type="text" name="name" required>
+      <label>Email</label>
+      <input type="email" name="email" required>
+      <label>Password</label>
+      <input type="password" name="password" required>
+      <label>Your area (e.g. Soweto)</label>
+      <input type="text" name="location">
+      <label>I am a...</label>
+      <select name="roleID">
+        <?php while ($r = $roles->fetch_assoc()) {
+          echo "<option value='{$r['roleID']}'>" . ucfirst(str_replace('_', ' ', $r['role_name'])) . "</option>";
+        } ?>
+      </select>
+      <button type="submit">Register</button>
+    </form>
+    <p>Already have an account? <a href="login.php">Log in</a></p>
+  </div>
+<?php include 'footer.php'; ?>
 </body>
 </html>

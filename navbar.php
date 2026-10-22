@@ -4,16 +4,18 @@ $role = $_SESSION["role"] ?? "";
 ?>
 <nav class="nav"><div class="nav-in">
   <a class="brand" href="index.php">
-    <svg width="34" height="34" viewBox="0 0 40 40" aria-hidden="true">
-      <circle cx="14" cy="16" r="8" fill="#0F766E"/><circle cx="26" cy="16" r="8" fill="#F59E0B" opacity=".92"/>
-      <path d="M6 30c4-6 10-6 14-2 4-4 10-4 14 2" stroke="#0B4F4A" stroke-width="3" fill="none" stroke-linecap="round"/>
-    </svg>
+    <svg width="36" height="36" viewBox="0 0 40 40" aria-hidden="true"><rect width="40" height="40" rx="10" fill="#0057B8"/><circle cx="15" cy="17" r="7" fill="#fff"/><circle cx="25" cy="17" r="7" fill="#F97316" opacity=".95"/><path d="M8 31c4-5 9-5 12-2 3-3 8-3 12 2" stroke="#fff" stroke-width="2.6" fill="none" stroke-linecap="round"/></svg>
     Ubuntu Care
   </a>
   <div class="nav-links">
     <a href="index.php">Home</a>
     <?php if ($loggedIn) { ?>
       <a href="dashboard.php">Dashboard</a>
+      <?php if ($role === "ngo_admin") { ?>
+        <a href="ngo_manage.php">Manage</a>
+      <?php } else { ?>
+        <a href="my_activity.php">My activity</a>
+      <?php } ?>
       <span class="who"><?php echo htmlspecialchars($_SESSION["name"]); ?> (<?php echo htmlspecialchars(str_replace('_',' ',$role)); ?>)</span>
       <a class="cta" href="logout.php">Log out</a>
     <?php } else { ?>

@@ -65,16 +65,10 @@ $totalPledged = $total->get_result()->fetch_assoc()["t"];
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>NGO Dashboard - Ubuntu Care</title>
-  <style>
-    body { font-family: Arial, sans-serif; max-width: 700px; margin: 40px auto; padding: 0 16px; }
-    .stats { display: flex; gap: 10px; margin: 16px 0; }
-    .stat { flex: 1; background: #eef4fb; border-radius: 6px; padding: 12px; text-align: center; }
-    .stat strong { display: block; font-size: 22px; color: #0057b8; }
-    .card { border: 1px solid #ccc; border-radius: 6px; padding: 12px; margin: 8px 0; }
-    .score { float: right; font-weight: bold; color: #1b7f3b; }
-  </style>
+ <link rel="stylesheet" href="style.css">
 </head>
 <body>
+   <?php include 'navbar.php'; ?>
   <h2><?php echo htmlspecialchars($ngo["org_name"]); ?> - Dashboard</h2>
 
   <div class="stats">
@@ -109,5 +103,6 @@ $totalPledged = $total->get_result()->fetch_assoc()["t"];
   <?php } ?>
 
   <p><a href="ngo_profile.php">Edit profile</a> | <a href="dashboard.php">Back to dashboard</a></p>
+  <?php include 'footer.php'; ?>
 </body>
 </html>

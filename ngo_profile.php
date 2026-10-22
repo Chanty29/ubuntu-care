@@ -49,14 +49,10 @@ $profile = $q->get_result()->fetch_assoc();
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>NGO Profile - Ubuntu Care</title>
-  <style>
-    body { font-family: Arial, sans-serif; max-width: 420px; margin: 40px auto; padding: 0 16px; }
-    input, select, button { width: 100%; padding: 10px; margin: 6px 0 14px; box-sizing: border-box; }
-    button { background: #0057b8; color: white; border: none; cursor: pointer; }
-    .msg { color: #1b7f3b; }
-  </style>
+   <link rel="stylesheet" href="style.css">
 </head>
 <body>
+<?php $narrow = true; include 'navbar.php'; ?>
   <h2>Your organisation</h2>
   <?php if ($message) echo "<p class='msg'>" . htmlspecialchars($message) . "</p>"; ?>
   <form method="post">
@@ -82,5 +78,6 @@ $profile = $q->get_result()->fetch_assoc();
     <button type="submit">Save profile</button>
   </form>
   <p><a href="dashboard.php">Back to dashboard</a></p>
+     <?php include 'footer.php'; ?>
 </body>
 </html>

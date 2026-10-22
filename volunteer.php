@@ -50,15 +50,10 @@ $signups = $stmt->get_result();
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>Volunteer - Ubuntu Care</title>
-  <style>
-    body { font-family: Arial, sans-serif; max-width: 520px; margin: 40px auto; padding: 0 16px; }
-    select, button { width: 100%; padding: 10px; margin: 6px 0 14px; box-sizing: border-box; }
-    button { background: #0057b8; color: white; border: none; cursor: pointer; }
-    .msg { color: #1b7f3b; }
-    .card { border: 1px solid #ccc; border-radius: 6px; padding: 12px; margin: 10px 0; }
-  </style>
+ <link rel="stylesheet" href="style.css">
 </head>
 <body>
+ <?php $narrow = true; include 'navbar.php'; ?>
   <h2>Volunteer for a task</h2>
   <?php if ($message) echo "<p class='msg'>" . htmlspecialchars($message) . "</p>"; ?>
   <form method="post">
@@ -84,5 +79,6 @@ $signups = $stmt->get_result();
     </div>
   <?php } ?>
   <p><a href="dashboard.php">Back to dashboard</a></p>
+  <?php include 'footer.php'; ?>
 </body>
 </html>
