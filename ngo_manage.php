@@ -36,9 +36,19 @@ if ($_SERVER["REQUEST_METHOD"] === "POST") {
         if ($kind === "match")  $stmt = $conn->prepare("UPDATE match_history SET status = ? WHERE matchID = ? AND ngoID = ?");
         if ($kind === "pledge") $stmt = $conn->prepare("UPDATE donor_pledges SET status = ? WHERE pledgeID = ? AND ngoID = ?");
         if ($kind === "signup") $stmt = $conn->prepare("UPDATE volunteer_signups SET status = ? WHERE signupID = ? AND ngoID = ?");
-        $stmt->bind_param("sii", $status, $id, $ngoID);
+                $stmt->bind_param("sii", $status, $id, $ngoID);
         $stmt->execute();
         $message = "Status updated.";
+
+        require_once 'helpers.php';
+        if ($kind === "match")  $w = $conn->prepare("SELECT r.userID FROM match_history m JOIN beneficiary_requests r ON m.requestID = r.requestID WHERE m.matchID = ?");
+        if ($kind === "pledge") $w = $conn->prepare("SELECT userID FROM donor_pledges WHERE pledgeID = ?");
+        if ($kind === "signup") $w = $conn->prepare("SELECT userID FROM volunteer_signups WHERE signupID = ?");
+        $w->bind_param("i", $id);
+        $w->execute();
+        $target = $w->get_result()->fetch_assoc();
+        if ($target) notify($conn, $target["userID"], $ngo["org_name"] . " updated your status", "New status: " . ($STATUS_LABELS[$status] ?? $status));
+        log_action($conn, $userID, "Status update", $kind . " #" . $id . " to " . $status);
     }
 }
 

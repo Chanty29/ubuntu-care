@@ -11,11 +11,25 @@ $role = $_SESSION["role"] ?? "";
     <a href="index.php">Home</a>
     <?php if ($loggedIn) { ?>
       <a href="dashboard.php">Dashboard</a>
-      <?php if ($role === "ngo_admin") { ?>
+      
+            <?php if ($role === "admin") { ?>
+        <a href="admin_dashboard.php">Admin console</a>
+      <?php } elseif ($role === "ngo_admin") { ?>
         <a href="ngo_manage.php">Manage</a>
       <?php } else { ?>
         <a href="my_activity.php">My activity</a>
       <?php } ?>
+      <?php
+        $unread = 0;
+        if (isset($conn)) {
+            $uq = $conn->prepare("SELECT COUNT(*) c FROM notifications WHERE userID = ? AND is_read = 0");
+            $uq->bind_param("i", $_SESSION["user_id"]);
+            $uq->execute();
+            $unread = $uq->get_result()->fetch_assoc()["c"];
+        }
+      ?>
+      <a href="notifications.php">Notifications<?php if ($unread) echo " <span class='pill'>$unread</span>"; ?></a>
+      
       <span class="who"><?php echo htmlspecialchars($_SESSION["name"]); ?> (<?php echo htmlspecialchars(str_replace('_',' ',$role)); ?>)</span>
       <a class="cta" href="logout.php">Log out</a>
     <?php } else { ?>

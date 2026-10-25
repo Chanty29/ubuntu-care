@@ -23,8 +23,7 @@ if ($_SERVER["REQUEST_METHOD"] === "POST") {
     }
 }
 
-$ngos = $conn->query("SELECT ngoID, org_name, area FROM ngo_profiles ORDER BY org_name");
-
+$ngos = $conn->query("SELECT ngoID, org_name, area FROM ngo_profiles WHERE status = 'approved' ORDER BY org_name");
 $stmt = $conn->prepare("
     SELECT p.amount, p.date_pledged, n.org_name,
            (SELECT COUNT(*) FROM match_history m WHERE m.ngoID = n.ngoID) AS people_matched

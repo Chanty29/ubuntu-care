@@ -34,7 +34,15 @@ if ($_SERVER["REQUEST_METHOD"] === "POST") {
             $stmt = $conn->prepare("INSERT INTO ngo_profiles (userID, org_name, category, area, latitude, longitude) VALUES (?, ?, ?, ?, ?, ?)");
             $stmt->bind_param("isssdd", $userID, $org, $cat, $area, $lat, $lng);
         }
-        $message = $stmt->execute() ? "Profile saved." : "Something went wrong.";
+                if ($stmt->execute()) {
+            $message = $existing ? "Profile updated." : "Profile saved. An admin will review it before you appear in matching.";
+            if (!$existing) {
+                require_once 'helpers.php';
+                log_action($conn, $userID, "NGO application submitted", $org);
+            }
+        } else {
+            $message = "Something went wrong.";
+        }
     }
 }
 

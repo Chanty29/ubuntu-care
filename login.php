@@ -19,6 +19,8 @@ if ($_SERVER["REQUEST_METHOD"] === "POST") {
         $_SESSION["user_id"] = $user["userID"];
         $_SESSION["name"] = $user["name"];
         $_SESSION["role"] = $user["role_name"];
+                require_once 'helpers.php';
+        log_action($conn, $user["userID"], "Login", $user["role_name"]);
 
         $opts = ["path" => "/", "httponly" => true, "samesite" => "Lax"];
         if ($remember) {

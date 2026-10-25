@@ -25,7 +25,7 @@ function distance_km($lat1, $lng1, $lat2, $lng2) {
 
 // Score out of 100: 70 for matching category, up to 30 for being close (within 60 km)
 function rank_ngos($conn, $category, $lat, $lng) {
-    $result = $conn->query("SELECT ngoID, org_name, category, area, latitude, longitude FROM ngo_profiles");
+    $result = $conn->query("SELECT ngoID, org_name, category, area, latitude, longitude FROM ngo_profiles WHERE status = 'approved'");
     $ranked = [];
     while ($ngo = $result->fetch_assoc()) {
         $dist = distance_km($lat, $lng, $ngo["latitude"], $ngo["longitude"]);

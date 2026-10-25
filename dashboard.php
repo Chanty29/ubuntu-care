@@ -7,6 +7,7 @@ if (!isset($_SESSION["user_id"])) {
 }
 $role = $_SESSION["role"];
 $userID = $_SESSION["user_id"];
+if ($role === "admin") { header("Location: admin_dashboard.php"); exit; }
 
 $ACTIONS = [
     "beneficiary" => [

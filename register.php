@@ -9,6 +9,8 @@ if ($_SERVER["REQUEST_METHOD"] === "POST") {
     $password = $_POST["password"];
     $location = trim($_POST["location"]);
     $roleID = (int)$_POST["roleID"];
+        $rn = $conn->query("SELECT role_name FROM roles WHERE roleID = $roleID")->fetch_assoc();
+    if (!$rn || $rn["role_name"] === "admin") { $roleID = 0; }
 
     if ($name === "" || $email === "" || strlen($password) < 6) {
         $message = "Please fill in all fields. Password must be at least 6 characters.";
@@ -25,6 +27,8 @@ if ($_SERVER["REQUEST_METHOD"] === "POST") {
             $stmt = $conn->prepare("INSERT INTO users (name, email, password_hash, roleID, location) VALUES (?, ?, ?, ?, ?)");
             $stmt->bind_param("sssis", $name, $email, $hash, $roleID, $location);
             if ($stmt->execute()) {
+               require_once 'helpers.php';
+                log_action($conn, $conn->insert_id, "Registered", $email);
                 header("Location: login.php?registered=1");
                 exit;
             } else {
@@ -33,7 +37,7 @@ if ($_SERVER["REQUEST_METHOD"] === "POST") {
         }
     }
 }
-$roles = $conn->query("SELECT roleID, role_name FROM roles");
+$roles = $conn->query("SELECT roleID, role_name FROM roles WHERE role_name <> 'admin'");
 ?>
 <!DOCTYPE html>
 <html>
