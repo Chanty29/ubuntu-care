@@ -121,3 +121,10 @@ th{background:var(--soft);color:var(--navy)}
 .card.unread{background:#EFF6FF;border-color:#BFDBFE}
 .scroll{overflow-x:auto}
 @media(max-width:700px){.side{flex:1 1 100%}}
+
+.pw{position:relative}
+.pw input{padding-right:48px}
+button.eye{position:absolute;right:6px;top:5px;width:auto;padding:7px 9px;background:transparent;color:var(--muted);border-radius:6px;line-height:0}
+button.eye:hover{background:var(--soft);color:var(--blue)}
+.errs{margin:0 0 16px;padding:12px 14px 12px 32px;background:#FEF2F2;color:#B91C1C;border:1px solid #FECACA;border-radius:8px}
+.hint{font-size:13px;color:var(--muted);margin:-10px 0 16px}

@@ -1,39 +1,68 @@
 <?php
 session_start();
 require 'db.php';
-$message = "";
+require 'lookups.php';
+require_once 'helpers.php';
+
+$ROLE_LABELS = [
+    "beneficiary" => "I need help (Beneficiary)",
+    "ngo_admin"   => "I run an organisation (NGO)",
+    "donor"       => "I want to donate (Donor)",
+    "volunteer"   => "I want to volunteer (Volunteer)",
+];
+$errors = [];
+$name = $email = $location = "";
+$roleID = 0;
 
 if ($_SERVER["REQUEST_METHOD"] === "POST") {
-    $name = trim($_POST["name"]);
-    $email = trim($_POST["email"]);
-    $password = $_POST["password"];
-    $location = trim($_POST["location"]);
-    $roleID = (int)$_POST["roleID"];
-        $rn = $conn->query("SELECT role_name FROM roles WHERE roleID = $roleID")->fetch_assoc();
-    if (!$rn || $rn["role_name"] === "admin") { $roleID = 0; }
+    $name = trim($_POST["name"] ?? "");
+    $email = trim($_POST["email"] ?? "");
+    $password = $_POST["password"] ?? "";
+    $confirm = $_POST["confirm"] ?? "";
+    $location = $_POST["location"] ?? "";
+    $roleID = (int)($_POST["roleID"] ?? 0);
 
-    if ($name === "" || $email === "" || strlen($password) < 6) {
-        $message = "Please fill in all fields. Password must be at least 6 characters.";
-    } else {
+    if (mb_strlen($name) < 2 || mb_strlen($name) > 100) {
+        $errors[] = "Enter your full name (2 to 100 characters).";
+    } elseif (!preg_match("/^[\p{L}][\p{L} .'-]*$/u", $name)) {
+        $errors[] = "Your name can only contain letters, spaces, apostrophes and hyphens.";
+    }
+    if (!filter_var($email, FILTER_VALIDATE_EMAIL) || strlen($email) > 150) {
+        $errors[] = "Enter a valid email address.";
+    }
+    $pe = validate_password($password);
+    if ($pe !== "") {
+        $errors[] = $pe;
+    } elseif ($password !== $confirm) {
+        $errors[] = "The two passwords do not match.";
+    }
+    if (!isset($AREAS[$location])) {
+        $errors[] = "Choose your area from the list.";
+    }
+    $rq = $conn->prepare("SELECT role_name FROM roles WHERE roleID = ?");
+    $rq->bind_param("i", $roleID);
+    $rq->execute();
+    $rn = $rq->get_result()->fetch_assoc();
+    if (!$rn || $rn["role_name"] === "admin") {
+        $errors[] = "Choose a valid role.";
+    }
+
+    if (!$errors) {
         $check = $conn->prepare("SELECT userID FROM users WHERE email = ?");
         $check->bind_param("s", $email);
         $check->execute();
-        $check->store_result();
-
-        if ($check->num_rows > 0) {
-            $message = "That email is already registered.";
+        if ($check->get_result()->num_rows > 0) {
+            $errors[] = "That email is already registered. Try logging in.";
         } else {
             $hash = password_hash($password, PASSWORD_BCRYPT);
             $stmt = $conn->prepare("INSERT INTO users (name, email, password_hash, roleID, location) VALUES (?, ?, ?, ?, ?)");
             $stmt->bind_param("sssis", $name, $email, $hash, $roleID, $location);
             if ($stmt->execute()) {
-               require_once 'helpers.php';
                 log_action($conn, $conn->insert_id, "Registered", $email);
                 header("Location: login.php?registered=1");
                 exit;
-            } else {
-                $message = "Something went wrong. Try again.";
             }
+            $errors[] = "Something went wrong. Please try again.";
         }
     }
 }
@@ -51,23 +80,42 @@ $roles = $conn->query("SELECT roleID, role_name FROM roles WHERE role_name <> 'a
 <?php $narrow = true; include 'navbar.php'; ?>
   <div class="panel">
     <h2>Join Ubuntu Care</h2>
-    <?php if ($message) echo "<p class='msg'>" . htmlspecialchars($message) . "</p>"; ?>
+    <?php if ($errors) { ?>
+      <ul class="errs"><?php foreach ($errors as $e) echo "<li>" . htmlspecialchars($e) . "</li>"; ?></ul>
+    <?php } ?>
     <form method="post">
-      <label>Full name</label>
-      <input type="text" name="name" required>
-      <label>Email</label>
-      <input type="email" name="email" required>
-      <label>Password</label>
-      <input type="password" name="password" required>
-      <label>Your area (e.g. Soweto)</label>
-      <input type="text" name="location">
-      <label>I am a...</label>
-      <select name="roleID">
-        <?php while ($r = $roles->fetch_assoc()) {
-          echo "<option value='{$r['roleID']}'>" . ucfirst(str_replace('_', ' ', $r['role_name'])) . "</option>";
+      <label for="name">Full name</label>
+      <input id="name" type="text" name="name" required minlength="2" maxlength="100" autocomplete="name" value="<?php echo htmlspecialchars($name); ?>">
+
+      <label for="email">Email</label>
+      <input id="email" type="email" name="email" required maxlength="150" autocomplete="username" value="<?php echo htmlspecialchars($email); ?>">
+
+      <label for="password">Password</label>
+      <input id="password" type="password" name="password" required minlength="8" maxlength="72" autocomplete="new-password">
+      <p class="hint">At least 8 characters, with a letter and a number.</p>
+
+      <label for="confirm">Confirm password</label>
+      <input id="confirm" type="password" name="confirm" required minlength="8" maxlength="72" autocomplete="new-password">
+
+      <label for="location">Your area</label>
+      <select id="location" name="location" required>
+        <option value="">Choose your area</option>
+        <?php foreach ($AREAS as $a => $coords) {
+          $sel = ($a === $location) ? "selected" : "";
+          echo "<option value='" . htmlspecialchars($a) . "' $sel>" . htmlspecialchars($a) . "</option>";
         } ?>
       </select>
-      <button type="submit">Register</button>
+
+      <label for="roleID">I am a...</label>
+      <select id="roleID" name="roleID" required>
+        <?php while ($r = $roles->fetch_assoc()) {
+          $sel = ((int)$r["roleID"] === $roleID) ? "selected" : "";
+          $label = $ROLE_LABELS[$r["role_name"]] ?? ucfirst($r["role_name"]);
+          echo "<option value='" . (int)$r["roleID"] . "' $sel>" . htmlspecialchars($label) . "</option>";
+        } ?>
+      </select>
+
+      <button type="submit">Create account</button>
     </form>
     <p>Already have an account? <a href="login.php">Log in</a></p>
   </div>

@@ -14,8 +14,10 @@ if ($_SERVER["REQUEST_METHOD"] === "POST") {
     $ngoID = (int)$_POST["ngoID"];
     $amount = (float)$_POST["amount"];
 
-    if ($ngoID <= 0 || $amount <= 0) {
-        $message = "Please pick an organisation and enter an amount above 0.";
+if ($ngoID <= 0 || $amount < 1 || $amount > 1000000) {
+        $message = "Please pick an organisation and enter an amount from R1 to R1 000 000.";
+
+
     } else {
         $stmt = $conn->prepare("INSERT INTO donor_pledges (userID, ngoID, amount) VALUES (?, ?, ?)");
         $stmt->bind_param("iid", $userID, $ngoID, $amount);
@@ -55,7 +57,7 @@ $pledges = $stmt->get_result();
       } ?>
     </select>
     <label>Pledge amount (R)</label>
-    <input type="number" name="amount" min="1" step="0.01" required>
+   <input type="number" name="amount" min="1" max="1000000" step="0.01" required>
     <button type="submit">Pledge</button>
   </form>
   <p><small>Pledges are recorded only. No payment is processed in this prototype.</small></p>

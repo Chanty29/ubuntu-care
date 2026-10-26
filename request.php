@@ -18,8 +18,8 @@ if ($_SERVER["REQUEST_METHOD"] === "POST") {
     $desc = trim($_POST["description"]);
     $area = $_POST["area"];
 
-    if ($desc === "" || !isset($AREAS[$area])) {
-        $message = "Please describe your need and pick your area.";
+    if (mb_strlen($desc) < 10 || mb_strlen($desc) > 1000 || !isset($AREAS[$area])) {
+        $message = "Please describe your need in 10 to 1000 characters and pick your area.";
     } else {
         $detected = detect_category($desc, $KEYWORDS);
 
@@ -53,7 +53,7 @@ if ($_SERVER["REQUEST_METHOD"] === "POST") {
     <?php if ($message) echo "<p class='msg'>" . htmlspecialchars($message) . "</p>"; ?>
     <form method="post">
       <label>Describe your need in your own words</label>
-      <textarea name="description" rows="4" required></textarea>
+      <textarea name="description" rows="4" required minlength="10" maxlength="1000"></textarea>
       <label>Your area</label>
       <select name="area">
         <?php foreach ($AREAS as $name => $coords) echo "<option value='" . htmlspecialchars($name) . "'>" . htmlspecialchars($name) . "</option>"; ?>

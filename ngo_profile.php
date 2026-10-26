@@ -16,8 +16,8 @@ if ($_SERVER["REQUEST_METHOD"] === "POST") {
     $cat  = $_POST["category"];
     $area = $_POST["area"];
 
-    if ($org === "" || !isset($CATEGORIES[$cat]) || !isset($AREAS[$area])) {
-        $message = "Please fill in all fields.";
+    if (mb_strlen($org) < 3 || mb_strlen($org) > 100 || !isset($CATEGORIES[$cat]) || !isset($AREAS[$area])) {
+        $message = "Organisation name must be 3 to 100 characters, and you must pick a category and area.";
     } else {
         $lat = $AREAS[$area][0];
         $lng = $AREAS[$area][1];
