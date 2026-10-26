@@ -6,7 +6,8 @@ $sideItems = [
     ["admin_users.php", "users", "Users"],
     ["admin_logs.php", "logs", "Activity log"],
     ["admin_backup.php", "backup", "Backup"],
-    
+    ["admin_reports.php", "reports", "Reports"],
+
 ];
 ?>
 <div class="shell">
