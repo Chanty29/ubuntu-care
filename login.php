@@ -2,6 +2,11 @@
 session_start();
 require 'db.php';
 require_once 'helpers.php';
+
+if (isset($_SESSION["user_id"]) && $_SERVER["REQUEST_METHOD"] !== "POST") {
+    header("Location: " . ($_SESSION["role"] === "admin" ? "admin_dashboard.php" : "dashboard.php"));
+    exit;
+}
 $message = "";
 $savedEmail = $_COOKIE["uc_email"] ?? "";
 

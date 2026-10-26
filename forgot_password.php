@@ -4,6 +4,10 @@ require 'db.php';
 require_once 'helpers.php';
 if (file_exists('config.php')) require_once 'config.php';
 
+if (isset($_SESSION["user_id"]) && $_SERVER["REQUEST_METHOD"] !== "POST") {
+    header("Location: " . ($_SESSION["role"] === "admin" ? "admin_dashboard.php" : "dashboard.php"));
+    exit;
+}
 $message = "";
 $sent = false;
 $link = "";

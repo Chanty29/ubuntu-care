@@ -10,6 +10,10 @@ $ROLE_LABELS = [
     "donor"       => "I want to donate (Donor)",
     "volunteer"   => "I want to volunteer (Volunteer)",
 ];
+if (isset($_SESSION["user_id"]) && $_SERVER["REQUEST_METHOD"] !== "POST") {
+    header("Location: " . ($_SESSION["role"] === "admin" ? "admin_dashboard.php" : "dashboard.php"));
+    exit;
+}
 $errors = [];
 $name = $email = $location = "";
 $roleID = 0;
