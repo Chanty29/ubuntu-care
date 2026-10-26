@@ -29,7 +29,7 @@ $role = $_SESSION["role"] ?? "";
         }
       ?>
       <a href="notifications.php">Notifications<?php if ($unread) echo " <span class='pill'>$unread</span>"; ?></a>
-      
+
       <span class="who"><?php echo htmlspecialchars($_SESSION["name"]); ?> (<?php echo htmlspecialchars(str_replace('_',' ',$role)); ?>)</span>
       <a class="cta" href="logout.php">Log out</a>
     <?php } else { ?>
@@ -38,4 +38,4 @@ $role = $_SESSION["role"] ?? "";
     <?php } ?>
   </div>
 </div></nav>
-<main class="container<?php echo !empty($narrow) ? ' narrow' : ''; ?>"></main>
+<main class="container<?php echo !empty($narrow) ? ' narrow' : ''; ?><?php echo !empty($auth) ? ' auth' : ''; ?>"></main>

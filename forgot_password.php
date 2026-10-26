@@ -45,7 +45,7 @@ if ($_SERVER["REQUEST_METHOD"] === "POST") {
   <link rel="stylesheet" href="style.css">
 </head>
 <body>
-<?php $narrow = true; include 'navbar.php'; ?>
+<?php $narrow = true; $auth = true; include 'navbar.php'; ?>
   <div class="panel">
     <h2>Reset your password</h2>
     <?php if ($message) echo "<p class='msg'>" . htmlspecialchars($message) . "</p>"; ?>

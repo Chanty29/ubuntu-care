@@ -128,3 +128,11 @@ button.eye{position:absolute;right:6px;top:5px;width:auto;padding:7px 9px;backgr
 button.eye:hover{background:var(--soft);color:var(--blue)}
 .errs{margin:0 0 16px;padding:12px 14px 12px 32px;background:#FEF2F2;color:#B91C1C;border:1px solid #FECACA;border-radius:8px}
 .hint{font-size:13px;color:var(--muted);margin:-10px 0 16px}
+
+main.container{display:block;max-width:1180px;margin:32px auto;padding:0 24px}
+main.container.narrow{max-width:480px}.panel{background:#fff;border:1px solid #E2E8F0;border-radius:14px;padding:26px;box-shadow:0 10px 30px rgba(11,36,71,.07)}
+main.container.auth{display:flex;flex-direction:column;justify-content:center;align-items:center;max-width:none;min-height:calc(100vh - 230px);margin:0 auto;padding:32px 16px}
+main.container.auth .panel{width:100%;max-width:440px;padding:32px}
+main.container.auth h2{text-align:center;margin:0 0 20px;font-size:28px}
+main.container.auth .panel>p{text-align:center}
+main.container.auth .hint{text-align:left}

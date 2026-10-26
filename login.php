@@ -7,6 +7,7 @@ if (isset($_SESSION["user_id"]) && $_SERVER["REQUEST_METHOD"] !== "POST") {
     header("Location: " . ($_SESSION["role"] === "admin" ? "admin_dashboard.php" : "dashboard.php"));
     exit;
 }
+
 $message = "";
 $savedEmail = $_COOKIE["uc_email"] ?? "";
 
@@ -59,7 +60,7 @@ if ($_SERVER["REQUEST_METHOD"] === "POST") {
   <link rel="stylesheet" href="style.css">
 </head>
 <body>
-<?php $narrow = true; include 'navbar.php'; ?>
+<?php $narrow = true; $auth = true; include 'navbar.php'; ?>
   <div class="panel">
     <h2>Log in to Ubuntu Care</h2>
     <?php if (isset($_GET["registered"])) echo "<p class='ok'>Account created! Please log in.</p>"; ?>

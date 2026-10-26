@@ -81,7 +81,7 @@ $roles = $conn->query("SELECT roleID, role_name FROM roles WHERE role_name <> 'a
   <link rel="stylesheet" href="style.css">
 </head>
 <body>
-<?php $narrow = true; include 'navbar.php'; ?>
+<?php $narrow = true; $auth = true; include 'navbar.php'; ?>
   <div class="panel">
     <h2>Join Ubuntu Care</h2>
     <?php if ($errors) { ?>

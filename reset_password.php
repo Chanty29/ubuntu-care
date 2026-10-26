@@ -50,7 +50,7 @@ if ($valid && $_SERVER["REQUEST_METHOD"] === "POST") {
   <link rel="stylesheet" href="style.css">
 </head>
 <body>
-<?php $narrow = true; include 'navbar.php'; ?>
+<?php $narrow = true; $auth = true; include 'navbar.php'; ?>
   <div class="panel">
     <h2>Choose a new password</h2>
     <?php if (!$valid) { ?>
