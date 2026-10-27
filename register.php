@@ -3,6 +3,8 @@ session_start();
 require 'db.php';
 require 'lookups.php';
 require_once 'helpers.php';
+require_once 'email_check.php';
+require_once 'mailer.php';
 
 $ROLE_LABELS = [
     "beneficiary" => "I need help (Beneficiary)",
@@ -20,7 +22,7 @@ $roleID = 0;
 
 if ($_SERVER["REQUEST_METHOD"] === "POST") {
     $name = trim($_POST["name"] ?? "");
-    $email = trim($_POST["email"] ?? "");
+    $email = strtolower(trim($_POST["email"] ?? ""));
     $password = $_POST["password"] ?? "";
     $confirm = $_POST["confirm"] ?? "";
     $location = $_POST["location"] ?? "";
@@ -31,8 +33,9 @@ if ($_SERVER["REQUEST_METHOD"] === "POST") {
     } elseif (!preg_match("/^[\p{L}][\p{L} .'-]*$/u", $name)) {
         $errors[] = "Your name can only contain letters, spaces, apostrophes and hyphens.";
     }
-    if (!filter_var($email, FILTER_VALIDATE_EMAIL) || strlen($email) > 150) {
-        $errors[] = "Enter a valid email address.";
+    $emailError = validate_email_strict($email);
+    if ($emailError !== "") {
+        $errors[] = $emailError;
     }
     $pe = validate_password($password);
     if ($pe !== "") {
@@ -58,12 +61,23 @@ if ($_SERVER["REQUEST_METHOD"] === "POST") {
         if ($check->get_result()->num_rows > 0) {
             $errors[] = "That email is already registered. Try logging in.";
         } else {
+            $needsVerify = mail_enabled() ? 0 : 1;   // if email is not set up, accounts are active straight away
             $hash = password_hash($password, PASSWORD_BCRYPT);
-            $stmt = $conn->prepare("INSERT INTO users (name, email, password_hash, roleID, location) VALUES (?, ?, ?, ?, ?)");
-            $stmt->bind_param("sssis", $name, $email, $hash, $roleID, $location);
+            $stmt = $conn->prepare("INSERT INTO users (name, email, password_hash, roleID, location, email_verified) VALUES (?, ?, ?, ?, ?, ?)");
+            $stmt->bind_param("sssisi", $name, $email, $hash, $roleID, $location, $needsVerify);
             if ($stmt->execute()) {
-                log_action($conn, $conn->insert_id, "Registered", $email);
-                header("Location: login.php?registered=1");
+                $newID = $conn->insert_id;
+                log_action($conn, $newID, "Registered", $email);
+                if ($needsVerify === 0) {
+                    $_SESSION["pending_verify"] = $newID;
+                    $err = null; $shown = null;
+                    send_code_email($conn, $newID, $email, $name, "verify", $err, $shown);
+                    $_SESSION["mail_error"] = $err;
+                    if ($shown) $_SESSION["demo_code"] = $shown;
+                    header("Location: verify_email.php");
+                } else {
+                    header("Location: login.php?registered=1");
+                }
                 exit;
             }
             $errors[] = "Something went wrong. Please try again.";
@@ -92,7 +106,8 @@ $roles = $conn->query("SELECT roleID, role_name FROM roles WHERE role_name <> 'a
       <input id="name" type="text" name="name" required minlength="2" maxlength="100" autocomplete="name" value="<?php echo htmlspecialchars($name); ?>">
 
       <label for="email">Email</label>
-      <input id="email" type="email" name="email" required maxlength="150" autocomplete="username" value="<?php echo htmlspecialchars($email); ?>">
+      <input id="email" type="email" name="email" required maxlength="150" autocomplete="username" autocapitalize="none" spellcheck="false" value="<?php echo htmlspecialchars($email); ?>">
+      <p class="hint">We will send a code to this address to confirm it is yours.</p>
 
       <label for="password">Password</label>
       <input id="password" type="password" name="password" required minlength="8" maxlength="72" autocomplete="new-password">

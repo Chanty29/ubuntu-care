@@ -25,7 +25,6 @@ if ($_SERVER["REQUEST_METHOD"] === "POST") {
     if (!filter_var($email, FILTER_VALIDATE_EMAIL) || $password === "") {
         $message = "Enter a valid email and your password.";
     } else {
-        // How many recent failures for this email? (time is calculated inside MySQL)
         $chk = $conn->prepare("SELECT COUNT(*) AS c,
                 TIMESTAMPDIFF(SECOND, NOW(), MAX(attempted_at) + INTERVAL " . LOCK_MINUTES . " MINUTE) AS secs
             FROM login_attempts
@@ -40,16 +39,22 @@ if ($_SERVER["REQUEST_METHOD"] === "POST") {
             $mins = max(1, (int)ceil(max(0, (int)$row["secs"]) / 60));
             $message = "Too many failed attempts. This account is locked. Try again in about " . $mins . " minute(s).";
         } else {
-            $stmt = $conn->prepare("SELECT u.userID, u.name, u.password_hash, r.role_name FROM users u JOIN roles r ON u.roleID = r.roleID WHERE u.email = ?");
+            $stmt = $conn->prepare("SELECT u.userID, u.name, u.password_hash, u.email_verified, r.role_name FROM users u JOIN roles r ON u.roleID = r.roleID WHERE u.email = ?");
             $stmt->bind_param("s", $email);
             $stmt->execute();
             $user = $stmt->get_result()->fetch_assoc();
 
             if ($user && password_verify($password, $user["password_hash"])) {
-                // Success: clear the failed attempts
                 $clr = $conn->prepare("DELETE FROM login_attempts WHERE email = ?");
                 $clr->bind_param("s", $email);
                 $clr->execute();
+
+                // Correct password but the email was never confirmed: send them to the code page
+                if ((int)$user["email_verified"] === 0) {
+                    $_SESSION["pending_verify"] = (int)$user["userID"];
+                    header("Location: verify_email.php");
+                    exit;
+                }
 
                 session_regenerate_id(true);
                 $_SESSION["user_id"] = $user["userID"];
@@ -73,7 +78,6 @@ if ($_SERVER["REQUEST_METHOD"] === "POST") {
                 exit;
             }
 
-            // Failure: record it
             $rec = $conn->prepare("INSERT INTO login_attempts (email, ip) VALUES (?, ?)");
             $rec->bind_param("ss", $email, $ip);
             $rec->execute();
@@ -104,6 +108,7 @@ if ($_SERVER["REQUEST_METHOD"] === "POST") {
   <div class="panel">
     <h2>Log in to Ubuntu Care</h2>
     <?php if (isset($_GET["registered"])) echo "<p class='ok'>Account created! Please log in.</p>"; ?>
+    <?php if (isset($_GET["verified"])) echo "<p class='ok'>Email confirmed! You can now log in.</p>"; ?>
     <?php if (isset($_GET["reset"])) echo "<p class='ok'>Password changed. Please log in with your new password.</p>"; ?>
     <?php if ($message) {
         $style = $locked ? "background:#FEE2E2;color:#991B1B;" : "background:#FEF3C7;color:#92400E;";
