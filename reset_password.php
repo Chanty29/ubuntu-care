@@ -2,42 +2,56 @@
 session_start();
 require 'db.php';
 require_once 'helpers.php';
+require_once 'mailer.php';
 
-$token = $_GET["token"] ?? ($_POST["token"] ?? "");
-$valid = null;
+$email = $_SESSION["reset_email"] ?? "";
+if ($email === "") { header("Location: forgot_password.php"); exit; }
+
 $message = "";
-$done = false;
+$isError = false;
 
-if (preg_match('/^[a-f0-9]{64}$/', $token)) {
-    $hash = hash("sha256", $token);
-    $stmt = $conn->prepare("SELECT resetID, userID FROM password_resets WHERE token_hash = ? AND used = 0 AND expires_at > NOW()");
-    $stmt->bind_param("s", $hash);
-    $stmt->execute();
-    $valid = $stmt->get_result()->fetch_assoc();
-}
+if ($_SERVER["REQUEST_METHOD"] === "POST") {
+    $code = preg_replace('/\D/', '', $_POST["code"] ?? "");
+    $password = $_POST["password"] ?? "";
+    $confirm = $_POST["confirm"] ?? "";
 
-if ($valid && $_SERVER["REQUEST_METHOD"] === "POST") {
-    $p = $_POST["password"] ?? "";
-    $c = $_POST["confirm"] ?? "";
-    $err = validate_password($p);
-    if ($err !== "") {
-        $message = $err;
-    } elseif ($p !== $c) {
+    $q = $conn->prepare("SELECT userID FROM users WHERE email = ?");
+    $q->bind_param("s", $email);
+    $q->execute();
+    $u = $q->get_result()->fetch_assoc();
+
+    $pe = validate_password($password);
+    if (strlen($code) !== 6) {
+        $message = "Enter the 6-digit code from your email.";
+        $isError = true;
+    } elseif ($pe !== "") {
+        $message = $pe;
+        $isError = true;
+    } elseif ($password !== $confirm) {
         $message = "The two passwords do not match.";
+        $isError = true;
     } else {
-        $newHash = password_hash($p, PASSWORD_BCRYPT);
-        $u = $conn->prepare("UPDATE users SET password_hash = ? WHERE userID = ?");
-        $u->bind_param("si", $newHash, $valid["userID"]);
-        $u->execute();
-        $m = $conn->prepare("UPDATE password_resets SET used = 1 WHERE resetID = ?");
-        $m->bind_param("i", $valid["resetID"]);
-        $m->execute();
-        $d = $conn->prepare("DELETE FROM remember_tokens WHERE userID = ?");
-        $d->bind_param("i", $valid["userID"]);
-        $d->execute();
-        log_action($conn, $valid["userID"], "Password reset completed", "");
-        header("Location: login.php?reset=1");
-        exit;
+        $err = null;
+        if ($u && check_code($conn, (int)$u["userID"], "reset", $code, $err)) {
+            $hash = password_hash($password, PASSWORD_BCRYPT);
+            $up = $conn->prepare("UPDATE users SET password_hash = ?, email_verified = 1 WHERE userID = ?");
+            $up->bind_param("si", $hash, $u["userID"]);
+            $up->execute();
+
+            $clr = $conn->prepare("DELETE FROM login_attempts WHERE email = ?");
+            $clr->bind_param("s", $email);
+            $clr->execute();
+            $rt = $conn->prepare("DELETE FROM remember_tokens WHERE userID = ?");
+            $rt->bind_param("i", $u["userID"]);
+            $rt->execute();
+
+            log_action($conn, (int)$u["userID"], "Password reset", $email);
+            unset($_SESSION["reset_email"], $_SESSION["reset_demo_code"]);
+            header("Location: login.php?reset=1");
+            exit;
+        }
+        $message = $err ?: "That code is not valid. Check it or request a new one.";
+        $isError = true;
     }
 }
 ?>
@@ -46,28 +60,33 @@ if ($valid && $_SERVER["REQUEST_METHOD"] === "POST") {
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>Choose a new password - Ubuntu Care</title>
+  <title>Reset password - Ubuntu Care</title>
   <link rel="stylesheet" href="style.css">
 </head>
 <body>
 <?php $narrow = true; $auth = true; include 'navbar.php'; ?>
   <div class="panel">
-    <h2>Choose a new password</h2>
-    <?php if (!$valid) { ?>
-      <p class="msg">This reset link is invalid, already used, or has expired.</p>
-      <p><a href="forgot_password.php">Request a new link</a></p>
-    <?php } else { ?>
-      <?php if ($message) echo "<p class='msg'>" . htmlspecialchars($message) . "</p>"; ?>
-      <form method="post">
-        <input type="hidden" name="token" value="<?php echo htmlspecialchars($token); ?>">
-        <label for="password">New password</label>
-        <input id="password" type="password" name="password" required minlength="8" maxlength="72" autocomplete="new-password">
-        <p class="hint">At least 8 characters, with a letter and a number.</p>
-        <label for="confirm">Confirm new password</label>
-        <input id="confirm" type="password" name="confirm" required minlength="8" maxlength="72" autocomplete="new-password">
-        <button type="submit">Change password</button>
-      </form>
-    <?php } ?>
+    <h2>Reset your password</h2>
+    <p>If <strong><?php echo htmlspecialchars($email); ?></strong> is registered, we sent a 6-digit code to it. It works for 15 minutes.</p>
+    <?php if (!empty($_SESSION["reset_demo_code"])) echo "<p class='muted'>Demo mode: email could not be sent. Your code is <strong>" . htmlspecialchars($_SESSION["reset_demo_code"]) . "</strong></p>"; ?>
+    <?php if ($message) {
+        $style = $isError ? "background:#FEE2E2;color:#991B1B;" : "background:#DCFCE7;color:#166534;";
+        echo "<p style='$style padding:10px 14px;border-radius:8px;font-weight:600'>" . htmlspecialchars($message) . "</p>";
+    } ?>
+    <form method="post">
+      <label for="code">6-digit code</label>
+      <input id="code" type="text" name="code" required inputmode="numeric" pattern="[0-9]{6}" maxlength="6" autocomplete="one-time-code" placeholder="123456">
+
+      <label for="password">New password</label>
+      <input id="password" type="password" name="password" required minlength="8" maxlength="72" autocomplete="new-password">
+      <p class="hint">At least 8 characters, with a letter and a number.</p>
+
+      <label for="confirm">Confirm new password</label>
+      <input id="confirm" type="password" name="confirm" required minlength="8" maxlength="72" autocomplete="new-password">
+
+      <button type="submit">Change password</button>
+    </form>
+    <p><a href="forgot_password.php">Send a new code</a> &middot; <a href="login.php">Back to login</a></p>
   </div>
 <?php include 'footer.php'; ?>
 </body>

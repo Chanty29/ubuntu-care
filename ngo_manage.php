@@ -3,6 +3,7 @@ session_start();
 require 'db.php';
 require 'status.php';
 require 'lookups.php';
+require_once 'helpers.php';
 
 if (!isset($_SESSION["user_id"]) || $_SESSION["role"] !== "ngo_admin") {
     header("Location: login.php");
@@ -18,37 +19,52 @@ if (!$ngo) {
     header("Location: ngo_profile.php");
     exit;
 }
-$ngoID = $ngo["ngoID"];
+$ngoID = (int)$ngo["ngoID"];
 
 $OPTIONS = [
     "match"  => ["pending", "accepted", "in_progress", "completed", "declined"],
     "pledge" => ["pledged", "received"],
     "signup" => ["signed_up", "confirmed", "completed"],
 ];
+$UPDATE_SQL = [
+    "match"  => "UPDATE match_history SET status = ? WHERE matchID = ? AND ngoID = ?",
+    "pledge" => "UPDATE donor_pledges SET status = ? WHERE pledgeID = ? AND ngoID = ?",
+    "signup" => "UPDATE volunteer_signups SET status = ? WHERE signupID = ? AND ngoID = ?",
+];
+$OWNER_SQL = [
+    "match"  => "SELECT r.userID FROM match_history m JOIN beneficiary_requests r ON m.requestID = r.requestID WHERE m.matchID = ? AND m.ngoID = ?",
+    "pledge" => "SELECT userID FROM donor_pledges WHERE pledgeID = ? AND ngoID = ?",
+    "signup" => "SELECT userID FROM volunteer_signups WHERE signupID = ? AND ngoID = ?",
+];
 $message = "";
+$isError = false;
 
 if ($_SERVER["REQUEST_METHOD"] === "POST") {
     $kind = $_POST["kind"] ?? "";
     $id = (int)($_POST["id"] ?? 0);
     $status = $_POST["status"] ?? "";
 
-    if (isset($OPTIONS[$kind]) && in_array($status, $OPTIONS[$kind], true)) {
-        if ($kind === "match")  $stmt = $conn->prepare("UPDATE match_history SET status = ? WHERE matchID = ? AND ngoID = ?");
-        if ($kind === "pledge") $stmt = $conn->prepare("UPDATE donor_pledges SET status = ? WHERE pledgeID = ? AND ngoID = ?");
-        if ($kind === "signup") $stmt = $conn->prepare("UPDATE volunteer_signups SET status = ? WHERE signupID = ? AND ngoID = ?");
-                $stmt->bind_param("sii", $status, $id, $ngoID);
-        $stmt->execute();
-        $message = "Status updated.";
-
-        require_once 'helpers.php';
-        if ($kind === "match")  $w = $conn->prepare("SELECT r.userID FROM match_history m JOIN beneficiary_requests r ON m.requestID = r.requestID WHERE m.matchID = ?");
-        if ($kind === "pledge") $w = $conn->prepare("SELECT userID FROM donor_pledges WHERE pledgeID = ?");
-        if ($kind === "signup") $w = $conn->prepare("SELECT userID FROM volunteer_signups WHERE signupID = ?");
-        $w->bind_param("i", $id);
+    if (!isset($OPTIONS[$kind]) || !in_array($status, $OPTIONS[$kind], true) || $id <= 0) {
+        $message = "That update is not valid.";
+        $isError = true;
+    } else {
+        // Make sure this row belongs to this NGO and find who to notify
+        $w = $conn->prepare($OWNER_SQL[$kind]);
+        $w->bind_param("ii", $id, $ngoID);
         $w->execute();
         $target = $w->get_result()->fetch_assoc();
-        if ($target) notify($conn, $target["userID"], $ngo["org_name"] . " updated your status", "New status: " . ($STATUS_LABELS[$status] ?? $status));
-        log_action($conn, $userID, "Status update", $kind . " #" . $id . " to " . $status);
+
+        if (!$target) {
+            $message = "You can only update items that belong to your organisation.";
+            $isError = true;
+        } else {
+            $stmt = $conn->prepare($UPDATE_SQL[$kind]);
+            $stmt->bind_param("sii", $status, $id, $ngoID);
+            $stmt->execute();
+            $message = "Status updated.";
+            notify($conn, $target["userID"], $ngo["org_name"] . " updated your status", "New status: " . ($STATUS_LABELS[$status] ?? $status));
+            log_action($conn, $userID, "Status update", $kind . " #" . $id . " to " . $status);
+        }
     }
 }
 
@@ -68,10 +84,10 @@ $stmt->execute();
 $signups = $stmt->get_result();
 
 function status_form($kind, $id, $current, $OPTIONS, $STATUS_LABELS) {
-    $h = "<form method='post' class='inline'><input type='hidden' name='kind' value='$kind'><input type='hidden' name='id' value='$id'><select name='status' aria-label='Status'>";
+    $h = "<form method='post' class='inline'><input type='hidden' name='kind' value='" . htmlspecialchars($kind) . "'><input type='hidden' name='id' value='" . (int)$id . "'><select name='status' aria-label='Status'>";
     foreach ($OPTIONS[$kind] as $o) {
         $sel = ($o === $current) ? " selected" : "";
-        $h .= "<option value='$o'$sel>" . htmlspecialchars($STATUS_LABELS[$o]) . "</option>";
+        $h .= "<option value='$o'$sel>" . htmlspecialchars($STATUS_LABELS[$o] ?? $o) . "</option>";
     }
     return $h . "</select><button type='submit' class='sm'>Update</button></form>";
 }
@@ -87,15 +103,15 @@ function status_form($kind, $id, $current, $OPTIONS, $STATUS_LABELS) {
 <body>
 <?php include 'navbar.php'; ?>
   <h2><?php echo htmlspecialchars($ngo["org_name"]); ?>: manage statuses</h2>
-  <?php if ($message) echo "<p class='ok'>" . htmlspecialchars($message) . "</p>"; ?>
+  <?php if ($message) echo "<p class='" . ($isError ? "errs" : "ok") . "'>" . htmlspecialchars($message) . "</p>"; ?>
 
   <h3>Requests matched to you</h3>
   <?php if ($matches->num_rows === 0) echo "<p class='muted'>No matched requests yet.</p>"; ?>
   <?php while ($m = $matches->fetch_assoc()) { ?>
     <div class="card">
-      <span class="score"><?php echo $m["match_score"]; ?>%</span>
+      <span class="score"><?php echo (int)$m["match_score"]; ?>%</span>
       <?php echo htmlspecialchars($m["description"]); ?><br>
-      <span class="muted"><?php echo htmlspecialchars($m["area"]); ?> &middot; <?php echo $m["date_created"]; ?></span>
+      <span class="muted"><?php echo htmlspecialchars($m["area"]); ?> &middot; <?php echo htmlspecialchars($m["date_created"]); ?></span>
       <div class="row" style="margin-top:10px"><?php echo status_badge($m["status"]); ?>
       <?php echo status_form("match", $m["matchID"], $m["status"], $OPTIONS, $STATUS_LABELS); ?></div>
     </div>
@@ -106,7 +122,7 @@ function status_form($kind, $id, $current, $OPTIONS, $STATUS_LABELS) {
   <?php while ($p = $pledges->fetch_assoc()) { ?>
     <div class="card row">
       <div><?php echo htmlspecialchars($p["name"]); ?> pledged <strong>R<?php echo number_format($p["amount"], 2); ?></strong><br>
-      <span class="muted"><?php echo $p["date_pledged"]; ?></span></div>
+      <span class="muted"><?php echo htmlspecialchars($p["date_pledged"]); ?></span></div>
       <?php echo status_form("pledge", $p["pledgeID"], $p["status"], $OPTIONS, $STATUS_LABELS); ?>
     </div>
   <?php } ?>
